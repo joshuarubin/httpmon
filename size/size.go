@@ -62,7 +62,14 @@ func (s *Size) Resize(width, height, x, y int) {
 	s.Y = y
 
 	s.Lines[0].Height = height - 3
-	s.Lines[0].Data = make([]int, width)
+
+	data := make([]int, width)
+	j := width - 1
+	for i := len(s.Lines[0].Data) - 1; i >= 0 && j >= 0; i-- {
+		data[j] = s.Lines[0].Data[i]
+		j--
+	}
+	s.Lines[0].Data = data
 
 	s.Unlock()
 }

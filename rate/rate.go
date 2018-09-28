@@ -69,7 +69,14 @@ func (r *Rate) Resize(width, height, x, y int) {
 		width = 0
 	}
 
-	r.Data = make([]float64, width)
+	data := make([]float64, width)
+	j := width - 1
+	for i := len(r.Data) - 1; i >= 0 && j >= 0; i-- {
+		data[j] = r.Data[i]
+		j--
+	}
+	r.Data = data
+
 	r.DataLabels = make([]string, width)
 
 	for i := 0; i < width; i++ {
