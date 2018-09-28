@@ -9,6 +9,14 @@ import (
 	"jrubin.io/httpmon/clf"
 )
 
+type msg int
+
+const (
+	unknown msg = iota
+	alert
+	recovery
+)
+
 type Alerts struct {
 	sync.RWMutex
 	Max float64
@@ -17,6 +25,7 @@ type Alerts struct {
 	counter int
 	start   time.Time
 	rates   []int
+	alertCh chan msg // for testing only
 }
 
 func New(max float64, dur time.Duration) *Alerts {
@@ -72,6 +81,9 @@ func (a *Alerts) renderer() {
 		a.BorderLabel = a.label(avg)
 
 		if a.start == (time.Time{}) && avg >= a.Max {
+			if a.alertCh != nil {
+				a.alertCh <- alert
+			}
 			a.start = time.Now()
 		}
 
@@ -80,6 +92,9 @@ func (a *Alerts) renderer() {
 		}
 
 		if a.start != (time.Time{}) && avg < a.Max {
+			if a.alertCh != nil {
+				a.alertCh <- recovery
+			}
 			a.start = time.Time{}
 			a.Text = fmt.Sprintf("Last alert recovered at %s", time.Now().Format(time.Stamp))
 		}

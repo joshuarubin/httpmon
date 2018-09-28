@@ -28,6 +28,7 @@ type config struct {
 }
 
 func main() {
+	// TODO(jrubin) colors
 	var c config
 
 	flag.StringVar(&c.File, "file", "/var/log/access.log", "file to read, \"-\" for stdin")
@@ -203,4 +204,8 @@ func process(f io.Reader, ch chan<- clf.Entry) {
 
 		ch <- entry
 	}
+
+	// if err := scanner.Err(); err != nil {
+	// 	panic(err) // TODO(jrubin)
+	// }
 }
