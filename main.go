@@ -5,7 +5,6 @@ import (
 	"flag"
 	"io"
 	"log"
-	"math"
 	"os"
 	"time"
 
@@ -17,6 +16,7 @@ import (
 	"jrubin.io/httpmon/rate"
 	"jrubin.io/httpmon/size"
 	"jrubin.io/httpmon/status"
+	"jrubin.io/httpmon/tail"
 	"jrubin.io/httpmon/topsections"
 )
 
@@ -43,16 +43,17 @@ func main() {
 }
 
 func run(c config) error {
-	var err error
-	f := os.Stdin
+	rdr := io.Reader(os.Stdin)
 	if c.File != "-" {
-		if f, err = os.Open(c.File); err != nil {
+		f, err := tail.New(c.File)
+		if err != nil {
 			return err
 		}
 		defer f.Close()
+		rdr = f
 	}
 
-	if err = termui.Init(); err != nil {
+	if err := termui.Init(); err != nil {
 		return err
 	}
 	defer termui.Close()
@@ -65,7 +66,7 @@ func run(c config) error {
 
 	bufferers := []termui.Bufferer{ts, r, st, sz, a}
 
-	rows := float64(3)
+	rows := 3
 	var lg *logs.Logs
 	if c.NoCatLog {
 		rows--
@@ -75,55 +76,56 @@ func run(c config) error {
 	}
 
 	draw := func() { termui.Render(bufferers...) }
-	resize := func(width, height float64) {
+
+	resize := func(width, height int) {
 		ts.Resize(
-			int(math.Round(width/2)),     // width
-			int(math.Round(height/rows)), // height
-			0,                            // x
-			0,                            // y
+			width/2,     // width
+			height/rows, // height
+			0,           // x
+			0,           // y
 		)
 
 		a.Resize(
-			int(math.Round(width/2)),         // width
-			int(math.Round(height/(rows*4))), // height
-			int(math.Round(width/2)),         // x
-			0,                                // y
+			width/2,         // width
+			height/(rows*4), // height
+			width/2,         // x
+			0,               // y
 		)
 
 		st.Resize(
-			int(math.Round(width/2)),         // width
-			int(math.Round(height/(rows*2))), // height
-			int(math.Round(width/2)),         // x
-			int(math.Round(height/(rows*4))), // y
+			width/2,         // width
+			height/(rows*2), // height
+			width/2,         // x
+			height/(rows*4), // y
 		)
 
 		sz.Resize(
-			int(math.Round(width/2)),             // width
-			int(math.Round(height/(rows*4))),     // height
-			int(math.Round(width/2)),             // x
-			int(math.Round((height*3)/(rows*4))), // y
+			width/2,             // width
+			height/(rows*4),     // height
+			width/2,             // x
+			(height*3)/(rows*4), // y
 		)
 
 		r.Resize(
-			int(math.Round(width)),       // width
-			int(math.Round(height/rows)), // height
-			0,                            // x
-			int(math.Round(height/rows)), // y
+			width,       // width
+			height/rows, // height
+			0,           // x
+			height/rows, // y
 		)
 
 		if !c.NoCatLog {
 			lg.Resize(
-				int(width),                     // width
-				int(math.Round(height/rows)),   // height
-				0,                              // x
-				int(math.Round(height*2/rows)), // y
+				width,         // width
+				height/rows,   // height
+				0,             // x
+				height*2/rows, // y
 			)
 		}
 	}
 
 	// get the terminal dimensions
-	width := float64(termui.TermWidth())
-	height := float64(termui.TermHeight())
+	width := termui.TermWidth()
+	height := termui.TermHeight()
 
 	resize(width, height)
 	draw()
@@ -138,7 +140,7 @@ func run(c config) error {
 	termui.Handle("/sys/wnd/resize", func(e termui.Event) {
 		data := e.Data.(termui.EvtWnd)
 		termui.Clear()
-		resize(float64(data.Width), float64(data.Height))
+		resize(data.Width, data.Height)
 		draw()
 	})
 
@@ -149,7 +151,7 @@ func run(c config) error {
 		}
 	}
 
-	go process(f, render(draw, handlers...))
+	go process(rdr, render(draw, handlers...))
 	termui.Loop()
 
 	return nil
@@ -196,5 +198,6 @@ func process(f io.Reader, ch chan<- clf.Entry) {
 	}
 
 	if err := scanner.Err(); err != nil {
+		panic(err) // TODO(jrubin)
 	}
 }
