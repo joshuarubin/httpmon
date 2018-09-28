@@ -65,6 +65,9 @@ func (r *Rate) Resize(width, height, x, y int) {
 
 	width *= 2
 	width -= 20
+	if width < 0 {
+		width = 0
+	}
 
 	r.Data = make([]float64, width)
 	r.DataLabels = make([]string, width)

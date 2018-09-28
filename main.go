@@ -125,7 +125,14 @@ func run(c config) error {
 
 	// get the terminal dimensions
 	width := termui.TermWidth()
+	if width == 0 {
+		width = 80
+	}
+
 	height := termui.TermHeight()
+	if height == 0 {
+		height = 24
+	}
 
 	resize(width, height)
 	draw()
@@ -195,9 +202,5 @@ func process(f io.Reader, ch chan<- clf.Entry) {
 		}
 
 		ch <- entry
-	}
-
-	if err := scanner.Err(); err != nil {
-		panic(err) // TODO(jrubin)
 	}
 }

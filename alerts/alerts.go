@@ -76,12 +76,12 @@ func (a *Alerts) renderer() {
 		}
 
 		if a.start != (time.Time{}) && avg >= a.Max {
-			a.Text = fmt.Sprintf("High traffic generated an alert - hits = %.2f/s\nTriggered at %s", avg, a.start)
+			a.Text = fmt.Sprintf("High traffic generated an alert\nTriggered at %s", a.start.Format(time.Stamp))
 		}
 
 		if a.start != (time.Time{}) && avg < a.Max {
 			a.start = time.Time{}
-			a.Text = fmt.Sprintf("Last alert recovered at %s", time.Now())
+			a.Text = fmt.Sprintf("Last alert recovered at %s", time.Now().Format(time.Stamp))
 		}
 
 		a.Unlock()
